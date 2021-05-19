@@ -26,24 +26,54 @@ public class Block {
     }
 
     public String calculateBlockHash() {
-        String dataToHash = previousHash
-                + timeStamp
-                + nonce
-                + data;
+        StringBuffer buffer = new StringBuffer();
+        String dataToHash = previousHash + timeStamp + nonce + data;
 
         MessageDigest digest;
-        byte[] bytes = null;
+        byte[] bytes;
         try {
             digest = MessageDigest.getInstance("SHA-256");
             bytes = digest.digest(dataToHash.getBytes(StandardCharsets.UTF_8));
+
+            for (byte b : bytes) {
+                buffer.append(String.format("%02x", b));
+            }
         } catch (NoSuchAlgorithmException ex) {
             log.debug("Failed", ex);
         }
-        StringBuffer buffer = new StringBuffer();
-        for (byte b : bytes) {
-            buffer.append(String.format("%02x", b));
-        }
+
         return buffer.toString();
     }
 
+    public String mineBlock(int prefix) {
+        String prefixString = new String(new char[prefix]).replace('\0', '0');
+        while (!hash.substring(0, prefix).equals(prefixString)) {
+            nonce++;
+            hash = calculateBlockHash();
+        }
+        return hash;
+    }
+
+    public boolean blockDataAndHashMatch() {
+        return hash != null && hash.equals(calculateBlockHash());
+    }
+
+    public boolean isSuccessorForBlockWithHash(String previousBlockHash) {
+        return previousBlockHash != null && previousBlockHash.equals(previousHash);
+    }
+
+    public boolean hashStartsWithPrefix(int prefixLength, String requiredPrefix) {
+        return hash != null && hash.substring(0, prefixLength).equals(requiredPrefix);
+    }
+
+    @Override
+    public String toString() {
+        return "Block{" +
+                " previousHash= " + previousHash +
+                ", hash= " + hash +
+                ", timeStamp= " + timeStamp +
+                ", nonce= " + nonce +
+                ", data= " + data +
+                '}';
+    }
 }
